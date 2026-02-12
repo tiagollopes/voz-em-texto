@@ -68,17 +68,25 @@ Rodar o sistema:
 ##   Menu do sistema
 
 1 - Gravar áudio
+
 2 - Transcrever áudio existente
+
 0 - Sair
 
 ##  Estrutura de pastas
 
 voz-em-texto/
+
 ├── main.go
+
 ├── install.sh
+
 ├── audio/     → gravação temporária
+
 ├── input/     → áudios para transcrever
+
 ├── output/    → resultados finais
+
 └── whisper/   → instalado automaticamente
 
 ##  Como funciona
@@ -152,4 +160,4 @@ Sinta-se livre para:
 
 ***Projeto experimental em Golang para automação de voz → texto offline.***
 
-***Feito por Tiago LLopes*** - Santos/SP - Brasil
+**Feito por Tiago LLopes** - Santos/SP - Brasil  🇧🇷
