@@ -1,0 +1,12 @@
+# Whisper completo
+whisper/
+
+# Áudios
+*.mp3
+*.wav
+*.m4a
+
+# Binários
+*.exe
+*.out
+voz-em-texto
