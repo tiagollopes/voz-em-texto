@@ -246,7 +246,7 @@ Este projeto é de uso livre para:
 
 - Modificações
 
--- Uso pessoal ou comercial
+- Uso pessoal ou comercial
 
 Peço apenas que mantenha os créditos ao autor original:
 
