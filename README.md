@@ -1,121 +1,244 @@
-#  🎙️ Voz em Texto — CLI em Go (Linux)
+#  🎙️ Voz em Texto — Go (Linux)
 
 Projeto experimental em **Golang** para gravação de áudio do sistema e transcrição automática em texto usando **Whisper.cpp**.
 
 Desenvolvido e testado em ambiente Linux (Lubuntu/Ubuntu).
 
-##  Objetivo
+Possui:
 
-Este é um projeto de estudos/testes para:
+- CLI (terminal)
 
-- Captura de áudio do PC
+- Interface gráfica (Fyne)
 
-- Transcrição offline
+- Gravação em tempo real
 
-- Automação via CLI
+- Transcrição automática ou manual
 
-- Integração Go + FFmpeg + Whisper.cpp
+- Suporte a arquivos externos
 
-Não é um produto final — está em evolução contínua.
+# Funcionalidades
 
-##  ⚙️ Requisitos
+**Gravação de áudio do sistema**
 
-Antes de rodar, o sistema precisa ter:
+- Captura áudio interno via PulseAudio monitor
 
-- Linux (Ubuntu / Lubuntu recomendado)
+- Usa ffmpeg
 
-- Go instalado
+- Grava até clicar em parar
 
-- Permissão sudo
+- Salva automaticamente em:
 
-As demais dependências são instaladas automaticamente.
+<pre>output/gravacao_ddmmaaaa_hhmmss.mp3</pre>
 
-##  📦 Instalação
+# Transcrição com Whisper.cpp
 
-Clone o repositório:
+- Instala Whisper automaticamente
 
-<pre>git clone https://github.com/tiagollopes/voz-em-texto.git</pre>
-<pre>cd voz-em-texto</pre>
+- Compila via make
 
-Dê permissão ao instalador:
+- Baixa modelo (tiny / base / small…)
 
-<pre>chmod +x install.sh</pre>
+Força idioma português:
 
-Execute:
+<pre>-l pt</pre>
 
-<pre>./install.sh</pre>
+Saída:
 
-O script instala:
+<pre>output/gravacao_xxx.txt</pre>
+# Transcrição de arquivos externos
 
-- ffmpeg
+Coloque áudios em:
+
+<pre>input/</pre>
+
+A GUI lista os arquivos disponíveis.
+
+Fluxo:
+
+Seleciona → Transcreve → Salva em:
+
+<pre>output/nome.txt</pre>
+
+# 🖥️ Interface Gráfica
+
+Desenvolvida com **Fyne v2**.
+
+**Elementos**
+
+- Botão Gravar
+
+- Botão Parar
+
+- Botão Transcrever (input)
+
+- Botão Sair
+
+**Indicador REC**
+
+Durante gravação:
+
+- Bolinha vermelha piscando
+
+- Tempo decorrido
+
+- Barra animada
+
+Exemplo visual:
+
+● REC 00:32
+██████░░░░
+
+Características:
+
+- Só aparece gravando
+
+- Some ao parar
+
+- Não move layout
+
+# 📊 Progresso de Transcrição
+
+- Barra baseada na duração do áudio
+
+- Vai até 95%
+
+- Depois:
+
+Finalizando transcrição…
+
+# Fluxos do Sistema
+
+-  1️⃣  Gravar + transcrever
+
+Gravar → Parar → Popup → Sim → Transcreve
+
+-  2️⃣  Gravar sem transcrever
+
+Gravar → Parar → Popup → Não
+
+Áudio fica salvo em output/.
+
+-  3️⃣  Transcrever arquivos externos
+
+Botão → Lista → Seleciona → Transcreve
+
+# Estrutura do Projeto
+
+voz-em-texto/
+
+│
+
+├── main.go        → CLI
+
+├── gui.go         → Interface gráfica
+
+├── backend.go     → Funções de gravação/transcrição
+
+├── install.sh     → Instalador Linux
+
+│
+
+├── audio/         → Áudio temporário
+
+├── input/         → Áudios externos
+
+├── output/        → Resultados
+
+│
+
+└── whisper/       → Whisper.cpp (auto instalado)
+
+# Dependências Linux
+
+Instaladas via install.sh:
 
 - cmake
 
 - build-essential
 
+- ffmpeg
+
 - git
 
-- whisper.cpp
+- pkg-config
 
-- modelo de transcrição
+- libgl1-mesa-dev
 
-##  ▶️ Execução
+- xorg-dev
 
-Rodar o sistema:
+- libxcursor-dev
+
+- libxrandr-dev
+
+- libxinerama-dev
+
+- libxi-dev
+
+# Dependências Go
+
+<pre>fyne.io/fyne/v2</pre>
+
+Instalar:
+
+<pre>go mod tidy</pre>
+
+# ⚙️ Instalação
+
+-  1️⃣  Clonar
+
+<pre>git clone https://github.com/tiagollopes/voz-em-texto.git </pre>
+
+<pre>cd voz-em-texto</pre>
+
+-  2️⃣  Rodar instalador
+
+<pre>chmod +x install.sh</pre>
+
+<pre>./install.sh</pre>
+
+O script:
+
+- Instala dependências
+
+- Clona Whisper.cpp
+
+- Compila
+
+- Baixa modelo
+
+# ▶️ Executar
+
+**GUI**
+
+<pre>go run gui.go backend.go</pre>
+
+ou build:
+
+<pre>go build -o voz-em-texto</pre>
+
+<pre>./voz-em-texto</pre>
+
+**CLI**
 
 <pre>go run main.go</pre>
 
-##   Menu do sistema
+# Estado do Projeto
 
-1 - Gravar áudio
+- Área	Status
 
-2 - Transcrever áudio existente
+- CLI	✅
 
-0 - Sair
+- GUI	✅
 
-##  Estrutura de pastas
+- Gravação	✅
 
-voz-em-texto/
+- Transcrição	✅
 
-├── main.go
+- Indicador REC	✅
 
-├── install.sh
+- Progresso	✅
 
-├── audio/     → gravação temporária
-
-├── input/     → áudios para transcrever
-
-├── output/    → resultados finais
-
-└── whisper/   → instalado automaticamente
-
-##  Como funciona
-
-**Gravação**
-
-- Captura áudio do monitor do sistema
-
-- Salva com timestamp
-
-- Copia para /output
-
-***Exemplo:***
-
-<pre>gravacao_12022026_173404.mp3</pre>
-
-**Transcrição**
-
-- Usa Whisper.cpp offline
-
-- Idioma: Português
-
-- Gera .txt com mesmo nome
-
-***Exemplo:***
-
-<pre>gravacao_12022026_173404.txt</pre>
-
-**Licença**
+# Licença
 
 Este projeto é de uso livre para:
 
@@ -128,6 +251,7 @@ Este projeto é de uso livre para:
 Peço apenas que mantenha os créditos ao autor original:
 
 Tiago Lopes
+
 GitHub: https://github.com/tiagollopes
 
 ##  Status do projeto
@@ -160,4 +284,6 @@ Sinta-se livre para:
 
 ***Projeto experimental em Golang para automação de voz → texto offline.***
 
-**Feito por Tiago LLopes** - Santos/SP - Brasil  🇧🇷
+# Autor
+
+Feito por **Tiago LLopes** - Santos/SP - Brasil  🇧🇷
