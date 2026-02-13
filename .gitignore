@@ -1,12 +1,70 @@
-# Whisper completo
+# =========================
+
+# Whisper.cpp
+
+# =========================
+
 whisper/
+models/
+build/
 
-# Áudios
-*.mp3
-*.wav
-*.m4a
+# =========================
 
-# Binários
+# Áudios e gravações
+
+# =========================
+
+audio/
+output/
+input/*.mp3
+input/*.wav
+input/*.m4a
+
+# =========================
+
+# Transcrições
+
+# =========================
+
+*.txt
+
+# (Se quiser versionar docs, remova essa linha)
+
+# =========================
+
+# Binários Go
+
+# =========================
+
 *.exe
 *.out
+*.bin
 voz-em-texto
+
+# =========================
+
+# Go build / cache
+
+# =========================
+
+dist/
+build/
+tmp/
+
+# =========================
+
+# Sistema
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# IDE
+
+# =========================
+
+.vscode/
+.idea/

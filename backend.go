@@ -21,6 +21,8 @@ import (
 )
 
 var ultimoAudioGerado string
+var cmdGravacao *exec.Cmd
+
 
 // ===============================
 // Detectar monitor
@@ -143,7 +145,8 @@ func instalarWhisper() error {
 	cmd = exec.Command(
 		"bash",
 		"./models/download-ggml-model.sh",
-		"base",
+		//"base",
+		"tiny",
 	)
 	cmd.Dir = "./whisper"
 	cmd.Stdout = os.Stdout
@@ -161,7 +164,8 @@ func transcrever() error {
 
 	cmd := exec.Command(
 		"./whisper/build/bin/whisper-cli",
-		"-m", "whisper/models/ggml-base.bin",
+		//"-m", "whisper/models/ggml-base.bin",
+		"-m", "whisper/models/ggml-tiny.bin",
 		"-f", "audio/audio.mp3",
 		"-l", "pt", // força português
 		"-otxt",
@@ -220,6 +224,31 @@ func checarDependencias() error {
 	fmt.Println("✅ Dependências OK")
 	return nil
 }
+func pararGravacao() error {
+
+	if cmdGravacao == nil {
+		return fmt.Errorf("nenhuma gravação em andamento")
+	}
+
+	err := cmdGravacao.Process.Signal(os.Interrupt)
+	if err != nil {
+		return err
+	}
+
+	cmdGravacao.Wait()
+
+	ts := timestamp()
+	nomeBase := "gravacao_" + ts
+
+	origem := "audio/audio.mp3"
+	destino := "output/" + nomeBase + ".mp3"
+
+	copiarArquivo(origem, destino)
+
+	ultimoAudioGerado = nomeBase
+
+	return nil
+}
 
 func copiarArquivo(origem, destino string) error {
 
@@ -230,6 +259,24 @@ func copiarArquivo(origem, destino string) error {
 
 	return os.WriteFile(destino, input, 0644)
 }
+
+func iniciarGravacao(monitor string) error {
+
+	cmdGravacao = exec.Command(
+		"ffmpeg",
+		"-y",
+		"-loglevel", "quiet",
+		"-f", "pulse",
+		"-i", monitor,
+		"-ac", "1",
+		"-ar", "16000",
+		"-b:a", "64k",
+		"audio/audio.mp3",
+	)
+
+	return cmdGravacao.Start()
+}
+
 
 func gravarAteParar(monitor string) error {
 
@@ -499,7 +546,8 @@ func transcreverArquivo() {
 
 	cmd := exec.Command(
 		"./whisper/build/bin/whisper-cli",
-		"-m", "whisper/models/ggml-base.bin",
+		//"-m", "whisper/models/ggml-base.bin",
+		"-m", "whisper/models/ggml-tiny.bin",
 		"-f", caminho,
 		"-l", "pt",
 		"-otxt",
@@ -575,7 +623,8 @@ func transcreverUltimo() error {
 
 	cmd := exec.Command(
 		"./whisper/build/bin/whisper-cli",
-		"-m", "whisper/models/ggml-base.bin",
+		//"-m", "whisper/models/ggml-base.bin",
+		"-m", "whisper/models/ggml-tiny.bin",
 		"-f", audioPath,
 		"-l", "pt",
 		"-otxt",
@@ -617,86 +666,3 @@ func transcreverUltimo() error {
 // ===============================
 // MAIN PIPELINE
 // ===============================
-func main() {
-
-	err := checarDependencias()
-	if err != nil {
-		return
-	}
-
-	prepararPastas()
-
-	opcao := menu()
-
-	switch opcao {
-
-	// =========================
-	// 1 - GRAVAR
-	// =========================
-	case "1":
-
-		monitor, err := detectarMonitor()
-		if err != nil {
-			fmt.Println("❌ Erro:", err)
-			return
-		}
-
-		err = gravarAteParar(monitor)
-		if err != nil {
-			fmt.Println("❌ Erro na gravação:", err)
-			return
-		}
-
-		fmt.Println("✅ Gravação concluída!")
-
-		// Pergunta se quer transcrever
-		var resp string
-		fmt.Print("Deseja transcrever o áudio? (S/N): ")
-		fmt.Scanln(&resp)
-
-		resp = strings.ToLower(strings.TrimSpace(resp))
-
-		if resp == "s" {
-
-			err = instalarWhisper()
-			if err != nil {
-				fmt.Println("❌ Erro instalando Whisper:", err)
-				return
-			}
-
-			err = transcreverUltimo() //err = transcrever()
-			if err != nil {
-				fmt.Println("❌ Erro na transcrição:", err)
-				return
-			}
-
-			/*os.Rename(
-				"audio/audio.mp3.txt",
-				"output/transcricao.txt",
-			)
-			*/
-			fmt.Println("✅ Transcrição salva em transcricao.txt")
-		}
-
-		fmt.Println("✅  Processo finalizado.")
-
-	// =========================
-	// 2 - TRANSCRIBIR ARQUIVO
-	// =========================
-	case "2":
-
-		transcreverArquivo()
-
-	// =========================
-	// 0 - SAIR
-	// =========================
-	case "0":
-
-		fmt.Println("Encerrado.")
-		return
-
-	default:
-
-		fmt.Println("Opção inválida.")
-	}
-}
