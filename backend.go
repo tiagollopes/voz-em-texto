@@ -22,6 +22,7 @@ import (
 
 var ultimoAudioGerado string
 var cmdGravacao *exec.Cmd
+var transcribeCmd *exec.Cmd
 
 
 // ===============================
@@ -162,19 +163,18 @@ func transcrever() error {
 
 	duracao, _ := duracaoAudio()
 
-	cmd := exec.Command(
+	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
-		//"-m", "whisper/models/ggml-base.bin",
 		"-m", "whisper/models/ggml-tiny.bin",
 		"-f", "audio/audio.mp3",
-		"-l", "pt", // força português
+		"-l", "pt",
 		"-otxt",
 	)
 
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+	transcribeCmd.Stdout = nil
+	transcribeCmd.Stderr = nil
 
-	err := cmd.Start()
+	err := transcribeCmd.Start()
 	if err != nil {
 		return err
 	}
@@ -182,14 +182,29 @@ func transcrever() error {
 	stopSpinner := make(chan bool)
 	go spinnerPercent(stopSpinner, duracao)
 
-	err = cmd.Wait()
+	err = transcribeCmd.Wait()
 
 	stopSpinner <- true
 
+	if err != nil {
+
+		// Cancelamento manual
+		if strings.Contains(err.Error(), "signal") ||
+			strings.Contains(err.Error(), "killed") {
+
+			fmt.Println("\n⛔ Transcrição cancelada.")
+			return nil
+		}
+
+		fmt.Println("❌ Erro na transcrição.")
+		return err
+	}
+
 	fmt.Println("\n✅ Transcrição finalizada!")
 
-	return err
+	return nil
 }
+
 
 // ===============================
 // Checagem Dependencia Linux
@@ -544,7 +559,7 @@ func transcreverArquivo() {
 	// Duração do áudio
 	duracao, _ := duracaoArquivo(caminho)
 
-	cmd := exec.Command(
+	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
 		//"-m", "whisper/models/ggml-base.bin",
 		"-m", "whisper/models/ggml-tiny.bin",
@@ -553,10 +568,10 @@ func transcreverArquivo() {
 		"-otxt",
 	)
 
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+	transcribeCmd.Stdout = nil
+	transcribeCmd.Stderr = nil
 
-	err = cmd.Start()
+	err = transcribeCmd.Start()
 	if err != nil {
 		fmt.Println("Erro iniciando transcrição.")
 		return
@@ -566,14 +581,25 @@ func transcreverArquivo() {
 	stopSpinner := make(chan bool)
 	go spinnerPercent(stopSpinner, duracao)
 
-	err = cmd.Wait()
+	err = transcribeCmd.Wait()
 
 	stopSpinner <- true
 
+
 	if err != nil {
-		fmt.Println("❌ Erro na transcrição.")
+
+	// Se foi cancelado manualmente
+	if strings.Contains(err.Error(), "signal") ||
+		strings.Contains(err.Error(), "killed") {
+
+		fmt.Println("\n⛔ Transcrição cancelada.")
 		return
 	}
+
+	fmt.Println("❌ Erro na transcrição.")
+	return
+	}
+
 
 	// Move saída
 	os.Rename(
@@ -583,6 +609,34 @@ func transcreverArquivo() {
 
 	fmt.Println("\n✅ Transcrição salva em output/")
 }
+
+// ===============================
+// Parar Transcrição
+// ===============================
+func pararTranscricao() error {
+
+	if transcribeCmd == nil {
+		fmt.Println("⛔ Nenhuma transcrição ativa.")
+		return nil
+	}
+
+	if transcribeCmd.Process == nil {
+		fmt.Println("⛔ Processo já finalizado.")
+		return nil
+	}
+
+	// Mata processo principal
+	_ = transcribeCmd.Process.Kill()
+
+	// Mata filhos whisper
+	exec.Command("pkill", "-f", "whisper-cli").Run()
+
+	fmt.Println("\n⛔ Transcrição cancelada pelo usuário.")
+
+	return nil
+}
+
+
 
 func duracaoArquivo(caminho string) (float64, error) {
 
@@ -621,7 +675,7 @@ func transcreverUltimo() error {
 
 	duracao, _ := duracaoArquivo(audioPath)
 
-	cmd := exec.Command(
+	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
 		//"-m", "whisper/models/ggml-base.bin",
 		"-m", "whisper/models/ggml-tiny.bin",
@@ -630,11 +684,11 @@ func transcreverUltimo() error {
 		"-otxt",
 	)
 
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+	transcribeCmd.Stdout = nil
+	transcribeCmd.Stderr = nil
 
 	// Inicia processo
-	err := cmd.Start()
+	err := transcribeCmd.Start()
 	if err != nil {
 		return err
 	}
@@ -644,13 +698,23 @@ func transcreverUltimo() error {
 	go spinnerPercent(stopSpinner, duracao)
 
 	// Aguarda finalizar
-	err = cmd.Wait()
+	err = transcribeCmd.Wait()
+
 
 	// Para spinner
 	stopSpinner <- true
 
 	if err != nil {
-		return err
+
+	// Se foi cancelado manualmente
+	if strings.Contains(err.Error(), "signal") ||
+		strings.Contains(err.Error(), "killed") {
+
+		fmt.Println("\n⛔ Transcrição cancelada.")
+		return nil
+	}
+
+	return err
 	}
 
 	txtOrigem := audioPath + ".txt"

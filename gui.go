@@ -27,6 +27,9 @@ var tempoInicio time.Time
 var btnGravar *widget.Button
 var btnParar *widget.Button
 var btnTranscrever *widget.Button
+var btnPararTranscricao *widget.Button
+var cancelado bool
+
 
 func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
@@ -53,13 +56,16 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 			if confirm && selectWidget.Selected != "" {
 
 				nome := selectWidget.Selected
-
-				status.SetText("⚙️ Transcrevendo: " + nome)
-
+				fyne.Do(func() {
+					status.SetText("⚙️ Transcrevendo: " + nome)
+				})
 				go func() {
 
 					transcrevendo = true
+					cancelado = false
+					fyne.Do(func() {
 					atualizarBotoes()
+					})
 
 					caminho := "input/" + nome
 
@@ -68,7 +74,8 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
 					cmd := exec.Command(
 						"./whisper/build/bin/whisper-cli",
-						"-m", "whisper/models/ggml-base.bin",
+						//"-m", "whisper/models/ggml-base.bin",
+						"-m", "whisper/models/ggml-tiny.bin",
 						"-f", caminho,
 						"-l", "pt",
 						"-otxt",
@@ -76,9 +83,14 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
 					err := cmd.Run()
 					if err != nil {
+						fyne.Do(func() {
 						status.SetText("❌ Erro na transcrição")
+						})
 						transcrevendo = false
+						cancelado = true
+						fyne.Do(func() {
 						atualizarBotoes()
+						})
 						return
 					}
 
@@ -86,11 +98,14 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 						caminho+".txt",
 						"output/"+nome+".txt",
 					)
-
+					fyne.Do(func() {
 					status.SetText("✅ Transcrição concluída")
-
+					})
 					transcrevendo = false
+					cancelado = false
+					fyne.Do(func() {
 					atualizarBotoes()
+					})
 				}()
 			}
 		},
@@ -114,6 +129,8 @@ func atualizarBotoes() {
 		btnGravar.Disable()
 		btnParar.Disable()
 		btnTranscrever.Disable()
+		btnPararTranscricao.Show()
+		btnPararTranscricao.Enable()
 		return
 	}
 
@@ -121,6 +138,7 @@ func atualizarBotoes() {
 	btnGravar.Enable()
 	btnTranscrever.Enable()
 	btnParar.Disable()
+	btnPararTranscricao.Hide()
 }
 
 
@@ -175,12 +193,20 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 
 	for {
 
+		// Se cancelou manualmente
 		if !transcrevendo {
 
-			// Mostra finalizando uma vez
-			if !mostrouFinalizando {
-				status.SetText("⚙️ Finalizando transcrição...")
-				time.Sleep(1 * time.Second)
+			if cancelado {
+
+				fyne.Do(func() {
+					status.SetText("⛔ Transcrição cancelada")
+				})
+
+			} else {
+
+				fyne.Do(func() {
+					status.SetText("✅ Transcrição concluída")
+				})
 			}
 
 			return
@@ -189,10 +215,19 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 		decorrido := time.Since(inicio).Seconds()
 		percent := (decorrido / tempoEstimado) * 100
 
+		// Finalização normal
 		if percent >= 95 {
-			status.SetText("⚙️ Finalizando transcrição...")
-			mostrouFinalizando = true
-			time.Sleep(1 * time.Second)
+
+			if !mostrouFinalizando {
+
+				fyne.Do(func() {
+					status.SetText("⚙️ Finalizando transcrição...")
+				})
+
+				mostrouFinalizando = true
+				time.Sleep(1 * time.Second)
+			}
+
 			continue
 		}
 
@@ -201,7 +236,9 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 			percent,
 		)
 
-		status.SetText(texto)
+		fyne.Do(func() {
+			status.SetText(texto)
+		})
 
 		time.Sleep(1 * time.Second)
 	}
@@ -336,6 +373,7 @@ func main() {
 					if resposta {
 
 						transcrevendo = true
+						cancelado = false
 						atualizarBotoes()
 
 						status.SetText("⚙️ Transcrevendo áudio...")
@@ -346,6 +384,7 @@ func main() {
 							if err != nil {
 								status.SetText("❌ Erro Whisper")
 								transcrevendo = false
+								cancelado = true
 								atualizarBotoes()
 								return
 							}
@@ -363,6 +402,7 @@ func main() {
 							if err != nil {
 								status.SetText("❌ Erro transcrição")
 								transcrevendo = false
+								cancelado = true
 								atualizarBotoes()
 								return
 							}
@@ -383,7 +423,7 @@ func main() {
 	// =========================
 	// BOTÃO TRANSCRIBIR
 	// =========================
-	btnTranscrever = widget.NewButton("🧠 Transcrever (input)", func() {
+	btnTranscrever = widget.NewButton(" Transcrever (input)", func() {
 	popupSelecionarAudio(w, status)
 	})
 
@@ -391,6 +431,26 @@ func main() {
 	w.Close()
 	})
 	btnSair.Importance = widget.LowImportance
+
+	// =========================
+	// BOTÃO PARAR TRANSCRIÇÃO
+	// =========================
+	btnPararTranscricao = widget.NewButton("⛔ Parar Transcrição", func() {
+
+		err := pararTranscricao()
+		if err != nil {
+			//status.SetText("❌ Erro ao parar transcrição")
+			status.SetText(err.Error())
+			return
+		}
+
+		status.SetText("⛔ Transcrição cancelada")
+
+		transcrevendo = false
+		cancelado = true
+		atualizarBotoes()
+	})
+	btnPararTranscricao.Hide()
 
 	// =========================
 	// LAYOUT
@@ -408,6 +468,7 @@ func main() {
 		btnGravar,
 		btnParar,
 		btnTranscrever,
+		btnPararTranscricao,
 		btnSair,
 	)
 
