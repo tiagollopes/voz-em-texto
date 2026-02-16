@@ -116,30 +116,35 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
 func atualizarBotoes() {
 
-	if gravando {
+	fyne.Do(func() {
 
-		btnGravar.Disable()
-		btnTranscrever.Disable()
-		btnParar.Enable()
-		return
-	}
+		if gravando {
 
-	if transcrevendo {
+			btnGravar.Disable()
+			btnTranscrever.Disable()
+			btnParar.Enable()
+			btnPararTranscricao.Hide()
+			return
+		}
 
-		btnGravar.Disable()
+		if transcrevendo {
+
+			btnGravar.Disable()
+			btnParar.Disable()
+			btnTranscrever.Disable()
+			btnPararTranscricao.Show()
+			btnPararTranscricao.Enable()
+			return
+		}
+
+		// parado
+		btnGravar.Enable()
+		btnTranscrever.Enable()
 		btnParar.Disable()
-		btnTranscrever.Disable()
-		btnPararTranscricao.Show()
-		btnPararTranscricao.Enable()
-		return
-	}
-
-	// Estado parado
-	btnGravar.Enable()
-	btnTranscrever.Enable()
-	btnParar.Disable()
-	btnPararTranscricao.Hide()
+		btnPararTranscricao.Hide()
+	})
 }
+
 
 
 // =========================
@@ -147,38 +152,32 @@ func atualizarBotoes() {
 // =========================
 func atualizarREC(dot *canvas.Text, label *widget.Label, bar *widget.ProgressBar) {
 
-	for  {
+	for {
 
 		if !gravando {
-		return
+			return
 		}
+
 		decorrido := time.Since(tempoInicio)
 
 		min := int(decorrido.Minutes())
 		seg := int(decorrido.Seconds()) % 60
 
-		// Atualiza tempo (texto nunca muda de posição)
-		label.SetText(
-			fmt.Sprintf("REC %02d:%02d", min, seg),
-		)
+		fyne.Do(func() {
 
-		// Piscar mudando intensidade do vermelho
-		if seg%2 == 0 {
+			label.SetText(
+				fmt.Sprintf("REC %02d:%02d", min, seg),
+			)
 
-			// Vermelho forte
-			dot.Color = color.RGBA{255, 0, 0, 255}
+			if seg%2 == 0 {
+				dot.Color = color.RGBA{255, 0, 0, 255}
+			} else {
+				dot.Color = color.RGBA{255, 0, 0, 80}
+			}
 
-		} else {
-
-			// Vermelho fraco (quase apagado)
-			//dot.Color = color.RGBA{120, 0, 0, 255}
-			dot.Color = color.RGBA{255, 0, 0, 80}
-		}
-
-		dot.Refresh()
-
-		// Barra animada
-		bar.SetValue(float64(seg%10) / 10.0)
+			dot.Refresh()
+			bar.SetValue(float64(seg%10) / 10.0)
+		})
 
 		time.Sleep(1 * time.Second)
 	}
@@ -193,7 +192,7 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 
 	for {
 
-		// Se cancelou manualmente
+		// Sai se terminou ou cancelou
 		if !transcrevendo {
 
 			if cancelado {
@@ -215,7 +214,12 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 		decorrido := time.Since(inicio).Seconds()
 		percent := (decorrido / tempoEstimado) * 100
 
-		// Finalização normal
+		// LIMITADOR — mantém 95%
+		if percent > 95 {
+			percent = 95
+		}
+
+		// Quando chega em 95 → entra em modo finalização
 		if percent >= 95 {
 
 			if !mostrouFinalizando {
@@ -225,9 +229,10 @@ func progressoTranscricao(status *widget.Label, duracao float64) {
 				})
 
 				mostrouFinalizando = true
-				time.Sleep(1 * time.Second)
 			}
 
+			// 🔒 trava aqui até terminar ou cancelar
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
@@ -328,8 +333,9 @@ func main() {
 			tempoInicio = time.Now()
 
 			go atualizarREC(recDot, recLabel, recBar)
-
+			fyne.Do(func() {
 			status.SetText("⚙ Gravando...")
+			})
 		}()
 	})
 
@@ -355,16 +361,16 @@ func main() {
 
 			gravando = false
 			atualizarBotoes()
+			fyne.Do(func() {
+				recDot.Hide()
+				recLabel.Hide()
+				recBar.Hide()
 
-			recDot.Hide()
-			recLabel.Hide()
-			recBar.Hide()
+				recLabel.SetText("REC 00:00")
+				recBar.SetValue(0)
 
-			recLabel.SetText("REC 00:00")
-			recBar.SetValue(0)
-
-			status.SetText("✅ Áudio salvo")
-
+				status.SetText("✅ Áudio salvo")
+			})
 			dialog.NewConfirm(
 				"Transcrever",
 				"Deseja transcrever agora?",
@@ -375,14 +381,16 @@ func main() {
 						transcrevendo = true
 						cancelado = false
 						atualizarBotoes()
-
+						fyne.Do(func() {
 						status.SetText("⚙️ Transcrevendo áudio...")
-
+						})
 						go func() {
 
 							err := instalarWhisper()
 							if err != nil {
+								fyne.Do(func() {
 								status.SetText("❌ Erro Whisper")
+								})
 								transcrevendo = false
 								cancelado = true
 								atualizarBotoes()
@@ -400,7 +408,9 @@ func main() {
 							// transcreve
 							err = transcreverUltimo()
 							if err != nil {
+								fyne.Do(func() {
 								status.SetText("❌ Erro transcrição")
+								})
 								transcrevendo = false
 								cancelado = true
 								atualizarBotoes()
@@ -408,7 +418,9 @@ func main() {
 							}
 
 							// finaliza
+							fyne.Do(func() {
 							status.SetText("✅ Transcrição concluída")
+							})
 
 							transcrevendo = false
 							atualizarBotoes()
