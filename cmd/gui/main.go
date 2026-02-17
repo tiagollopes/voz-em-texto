@@ -1,6 +1,8 @@
 package main
 
 import (
+	"voz-em-texto/internal/backend"
+
 	"fmt"
 	"time"
 	"os"
@@ -13,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"image/color"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/theme"
 
 )
 
@@ -69,7 +72,7 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
 					caminho := "input/" + nome
 
-					duracao, _ := duracaoArquivo(caminho)
+					duracao, _ := backend.DuracaoArquivo(caminho)
 					go progressoTranscricao(status, duracao)
 
 					cmd := exec.Command(
@@ -272,7 +275,16 @@ func listarAudiosInput() []string {
 func main() {
 
 	a := app.New()
+
+	a.SetIcon(theme.MediaPlayIcon())
+
+	a.Settings().SetTheme(theme.LightTheme())
+
 	w := a.NewWindow("Voz em Texto")
+
+	w.SetIcon(theme.MediaPlayIcon())
+
+
 	os.MkdirAll("output", 0755)
 	// =========================
 	// WIDGETS REC
@@ -310,13 +322,13 @@ func main() {
 
 		go func() {
 
-			monitor, err := detectarMonitor()
+			monitor, err := backend.DetectarMonitor()
 			if err != nil {
 				status.SetText("❌ Erro ao detectar monitor")
 				return
 			}
 
-			err = iniciarGravacao(monitor)
+			err = backend.IniciarGravacao(monitor)
 			if err != nil {
 				status.SetText("❌ Erro ao iniciar gravação")
 				return
@@ -325,10 +337,11 @@ func main() {
 			// Inicia REC
 			gravando = true
 			atualizarBotoes()
-
-			recDot.Show()
-			recLabel.Show()
-			recBar.Show()
+			fyne.Do(func() {
+				recDot.Show()
+				recLabel.Show()
+				recBar.Show()
+			})
 
 			tempoInicio = time.Now()
 
@@ -353,7 +366,7 @@ func main() {
 
 		go func() {
 
-			err := pararGravacao()
+			err := backend.PararGravacao()
 			if err != nil {
 				status.SetText("❌ Erro ao parar")
 				return
@@ -386,7 +399,7 @@ func main() {
 						})
 						go func() {
 
-							err := instalarWhisper()
+							err := backend.InstalarWhisper()
 							if err != nil {
 								fyne.Do(func() {
 								status.SetText("❌ Erro Whisper")
@@ -397,16 +410,16 @@ func main() {
 								return
 							}
 
-							audioPath := "output/" + ultimoAudioGerado + ".mp3"
+							audioPath := "output/" + backend.UltimoAudioGerado + ".mp3"
 
 							// duração
-							duracao, _ := duracaoArquivo(audioPath)
+							duracao, _ := backend.DuracaoArquivo(audioPath)
 
 							// inicia progresso
 							go progressoTranscricao(status, duracao)
 
 							// transcreve
-							err = transcreverUltimo()
+							err = backend.TranscreverUltimo()
 							if err != nil {
 								fyne.Do(func() {
 								status.SetText("❌ Erro transcrição")
@@ -449,7 +462,7 @@ func main() {
 	// =========================
 	btnPararTranscricao = widget.NewButton("⛔ Parar Transcrição", func() {
 
-		err := pararTranscricao()
+		err := backend.PararTranscricao()
 		if err != nil {
 			//status.SetText("❌ Erro ao parar transcrição")
 			status.SetText(err.Error())

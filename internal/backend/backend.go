@@ -8,7 +8,7 @@ chmod +x install.sh
 ./install.sh
 go run main.go
 */
-package main
+package backend
 
 import (
 	"bufio"
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var ultimoAudioGerado string
+var UltimoAudioGerado string
 var cmdGravacao *exec.Cmd
 var transcribeCmd *exec.Cmd
 
@@ -28,7 +28,7 @@ var transcribeCmd *exec.Cmd
 // ===============================
 // Detectar monitor
 // ===============================
-func detectarMonitor() (string, error) {
+func DetectarMonitor() (string, error) {
 
 	fmt.Println("⚙ Procurando monitor de áudio...")
 
@@ -56,7 +56,7 @@ func detectarMonitor() (string, error) {
 	return "", fmt.Errorf("nenhum monitor encontrado")
 }
 
-func prepararPastas() {
+func PrepararPastas() {
 
 	pastas := []string{
 		"audio",
@@ -75,7 +75,7 @@ func prepararPastas() {
 // ===============================
 // Gravar áudio
 // ===============================
-func gravarAudio(monitor string) error {
+func PravarAudio(monitor string) error {
 
 	fmt.Println("♪ Gravando áudio...")
 
@@ -100,7 +100,7 @@ func gravarAudio(monitor string) error {
 // ===============================
 // Instalacao Whisper
 // ===============================
-func instalarWhisper() error {
+func InstalarWhisper() error {
 
 	fmt.Println("📦 Verificando Whisper.cpp...")
 
@@ -159,9 +159,9 @@ func instalarWhisper() error {
 // ===============================
 // Transcrever
 // ===============================
-func transcrever() error {
+func Transcrever() error {
 
-	duracao, _ := duracaoAudio()
+	duracao, _ := DuracaoAudio()
 
 	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
@@ -180,7 +180,7 @@ func transcrever() error {
 	}
 
 	stopSpinner := make(chan bool)
-	go spinnerPercent(stopSpinner, duracao)
+	go SpinnerPercent(stopSpinner, duracao)
 
 	err = transcribeCmd.Wait()
 
@@ -209,7 +209,7 @@ func transcrever() error {
 // ===============================
 // Checagem Dependencia Linux
 // ===============================
-func checarDependencias() error {
+func ChecarDependencias() error {
 
 	fmt.Println("⚙ Verificando dependências...")
 
@@ -239,7 +239,7 @@ func checarDependencias() error {
 	fmt.Println("✅ Dependências OK")
 	return nil
 }
-func pararGravacao() error {
+func PararGravacao() error {
 
 	if cmdGravacao == nil {
 		return fmt.Errorf("nenhuma gravação em andamento")
@@ -258,14 +258,14 @@ func pararGravacao() error {
 	origem := "audio/audio.mp3"
 	destino := "output/" + nomeBase + ".mp3"
 
-	copiarArquivo(origem, destino)
+	CopiarArquivo(origem, destino)
 
-	ultimoAudioGerado = nomeBase
+	UltimoAudioGerado = nomeBase
 
 	return nil
 }
 
-func copiarArquivo(origem, destino string) error {
+func CopiarArquivo(origem, destino string) error {
 
 	input, err := os.ReadFile(origem)
 	if err != nil {
@@ -275,7 +275,7 @@ func copiarArquivo(origem, destino string) error {
 	return os.WriteFile(destino, input, 0644)
 }
 
-func iniciarGravacao(monitor string) error {
+func IniciarGravacao(monitor string) error {
 
 	cmdGravacao = exec.Command(
 		"ffmpeg",
@@ -293,7 +293,7 @@ func iniciarGravacao(monitor string) error {
 }
 
 
-func gravarAteParar(monitor string) error {
+func GravarAteParar(monitor string) error {
 
 	// Espaço UI
 	fmt.Println()
@@ -320,7 +320,7 @@ func gravarAteParar(monitor string) error {
 	inicio := time.Now()
 
 	stopSpinner := make(chan bool)
-	go spinnerGravando(stopSpinner, inicio)
+	go SpinnerGravando(stopSpinner, inicio)
 
 	fmt.Scanln()
 
@@ -337,17 +337,17 @@ func gravarAteParar(monitor string) error {
 	origem := "audio/audio.mp3"
 	destino := "output/" + nomeBase + ".mp3"
 
-	copiarArquivo(origem, destino)
+	CopiarArquivo(origem, destino)
 
 	// guarda na sessão
-	ultimoAudioGerado = nomeBase
+	UltimoAudioGerado = nomeBase
 
 	fmt.Println("✅ Áudio salvo em:", destino)
 
 	return nil
 }
 
-func spinnerGravando(stopChan chan bool, inicio time.Time) {
+func SpinnerGravando(stopChan chan bool, inicio time.Time) {
 
 	chars := []string{"/", "-", "\\", "|"}
 	i := 0
@@ -407,7 +407,7 @@ func spinnerGravando(stopChan chan bool, inicio time.Time) {
 	}
 }
 
-func duracaoAudio() (float64, error) {
+func DuracaoAudio() (float64, error) {
 
 	cmd := exec.Command(
 		"ffprobe",
@@ -427,7 +427,7 @@ func duracaoAudio() (float64, error) {
 	return duracao, nil
 }
 
-func spinnerPercent(stopChan chan bool, duracao float64) {
+func SpinnerPercent(stopChan chan bool, duracao float64) {
 
 	chars := []string{"/", "-", "\\", "|"}
 	i := 0
@@ -472,7 +472,7 @@ func spinnerPercent(stopChan chan bool, duracao float64) {
 	}
 }
 
-func piscarTexto(stopChan chan bool) {
+func PiscarTexto(stopChan chan bool) {
 
 	for {
 		select {
@@ -499,7 +499,7 @@ func piscarTexto(stopChan chan bool) {
 	}
 }
 
-func menu() string {
+func Menu() string {
 
 	var opcao string
 
@@ -514,7 +514,7 @@ func menu() string {
 	return opcao
 }
 
-func transcreverArquivo() {
+func TranscreverArquivo() {
 
 	arquivos, err := os.ReadDir("input")
 	if err != nil {
@@ -550,14 +550,14 @@ func transcreverArquivo() {
 	fmt.Println("\n⚙ Transcrevendo:", nome)
 
 	// Instala whisper se precisar
-	err = instalarWhisper()
+	err = InstalarWhisper()
 	if err != nil {
 		fmt.Println("Erro instalando Whisper.")
 		return
 	}
 
 	// Duração do áudio
-	duracao, _ := duracaoArquivo(caminho)
+	duracao, _ := DuracaoArquivo(caminho)
 
 	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
@@ -579,7 +579,7 @@ func transcreverArquivo() {
 
 	// Spinner percentual
 	stopSpinner := make(chan bool)
-	go spinnerPercent(stopSpinner, duracao)
+	go SpinnerPercent(stopSpinner, duracao)
 
 	err = transcribeCmd.Wait()
 
@@ -613,7 +613,7 @@ func transcreverArquivo() {
 // ===============================
 // Parar Transcrição
 // ===============================
-func pararTranscricao() error {
+func PararTranscricao() error {
 
 	if transcribeCmd == nil {
 		fmt.Println("⛔ Nenhuma transcrição ativa.")
@@ -638,7 +638,7 @@ func pararTranscricao() error {
 
 
 
-func duracaoArquivo(caminho string) (float64, error) {
+func DuracaoArquivo(caminho string) (float64, error) {
 
 	cmd := exec.Command(
 		"ffprobe",
@@ -662,18 +662,18 @@ func timestamp() string {
 	return time.Now().Format("02012006_150405")
 }
 
-func transcreverUltimo() error {
+func TranscreverUltimo() error {
 
-	if ultimoAudioGerado == "" {
+	if UltimoAudioGerado == "" {
 		fmt.Println("Nenhuma gravação na sessão.")
 		return fmt.Errorf("nenhuma gravação na sessão")
 	}
 
-	audioPath := "output/" + ultimoAudioGerado + ".mp3"
+	audioPath := "output/" + UltimoAudioGerado + ".mp3"
 
-	fmt.Println("⚙ Transcrevendo:", ultimoAudioGerado)
+	fmt.Println("⚙ Transcrevendo:", UltimoAudioGerado)
 
-	duracao, _ := duracaoArquivo(audioPath)
+	duracao, _ := DuracaoArquivo(audioPath)
 
 	transcribeCmd = exec.Command(
 		"./whisper/build/bin/whisper-cli",
@@ -695,7 +695,7 @@ func transcreverUltimo() error {
 
 	// Spinner enquanto roda
 	stopSpinner := make(chan bool)
-	go spinnerPercent(stopSpinner, duracao)
+	go SpinnerPercent(stopSpinner, duracao)
 
 	// Aguarda finalizar
 	err = transcribeCmd.Wait()
@@ -718,7 +718,7 @@ func transcreverUltimo() error {
 	}
 
 	txtOrigem := audioPath + ".txt"
-	txtDestino := "output/" + ultimoAudioGerado + ".txt"
+	txtDestino := "output/" + UltimoAudioGerado + ".txt"
 
 	os.Rename(txtOrigem, txtDestino)
 
