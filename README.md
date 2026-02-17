@@ -32,7 +32,7 @@ O script `install.sh` automatiza a instalação de:
 **2. Configuração**
 
 <pre>
-git clone [https://github.com/tiagollopes/voz-em-texto.git](https://github.com/tiagollopes/voz-em-texto.git)
+git clone https://github.com/tiagollopes/voz-em-texto.git
 cd voz-em-texto
 chmod +x install.sh
 ./install.sh
