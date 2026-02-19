@@ -40,6 +40,8 @@ input/*.m4a
 *.out
 *.bin
 voz-em-texto
+vozcli
+voz
 
 # =========================
 

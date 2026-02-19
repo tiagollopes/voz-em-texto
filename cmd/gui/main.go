@@ -1,8 +1,8 @@
 package main
 
 import (
-	"voz-em-texto/internal/backend"
-
+	"voz-em-texto/internal/audio"
+	"voz-em-texto/internal/transcribe"
 	"fmt"
 	"time"
 	"os"
@@ -32,7 +32,7 @@ var btnParar *widget.Button
 var btnTranscrever *widget.Button
 var btnPararTranscricao *widget.Button
 var cancelado bool
-
+var cmdGravacao *exec.Cmd
 
 func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 
@@ -59,55 +59,54 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 			if confirm && selectWidget.Selected != "" {
 
 				nome := selectWidget.Selected
+
 				fyne.Do(func() {
 					status.SetText("⚙️ Transcrevendo: " + nome)
 				})
+
 				go func() {
 
 					transcrevendo = true
 					cancelado = false
+
 					fyne.Do(func() {
-					atualizarBotoes()
+						atualizarBotoes()
 					})
 
 					caminho := "input/" + nome
 
-					duracao, _ := backend.DuracaoArquivo(caminho)
+					// progresso GUI
+					duracao, _ := transcribe.DuracaoArquivo(caminho)
 					go progressoTranscricao(status, duracao)
 
-					cmd := exec.Command(
-						"./whisper/build/bin/whisper-cli",
-						//"-m", "whisper/models/ggml-base.bin",
-						"-m", "whisper/models/ggml-tiny.bin",
-						"-f", caminho,
-						"-l", "pt",
-						"-otxt",
-					)
-
-					err := cmd.Run()
+					// chama domínio IA
+					err := transcribe.TranscreverCaminho(caminho)
 					if err != nil {
+
 						fyne.Do(func() {
-						status.SetText("❌ Erro na transcrição")
+							status.SetText("❌ Erro na transcrição")
 						})
+
 						transcrevendo = false
 						cancelado = true
+
 						fyne.Do(func() {
-						atualizarBotoes()
+							atualizarBotoes()
 						})
+
 						return
 					}
 
-					os.Rename(
-						caminho+".txt",
-						"output/"+nome+".txt",
-					)
+					// sucesso
 					fyne.Do(func() {
-					status.SetText("✅ Transcrição concluída")
+						status.SetText("✅ Transcrição concluída")
 					})
+
 					transcrevendo = false
 					cancelado = false
+
 					fyne.Do(func() {
-					atualizarBotoes()
+						atualizarBotoes()
 					})
 				}()
 			}
@@ -115,6 +114,7 @@ func popupSelecionarAudio(w fyne.Window, status *widget.Label) {
 		w,
 	)
 }
+
 
 
 func atualizarBotoes() {
@@ -322,13 +322,13 @@ func main() {
 
 		go func() {
 
-			monitor, err := backend.DetectarMonitor()
+			monitor, err := audio.DetectarMonitor()
 			if err != nil {
 				status.SetText("❌ Erro ao detectar monitor")
 				return
 			}
 
-			err = backend.IniciarGravacao(monitor)
+			err = audio.IniciarGravacao(monitor)
 			if err != nil {
 				status.SetText("❌ Erro ao iniciar gravação")
 				return
@@ -366,7 +366,7 @@ func main() {
 
 		go func() {
 
-			err := backend.PararGravacao()
+			err := audio.PararGravacao()
 			if err != nil {
 				status.SetText("❌ Erro ao parar")
 				return
@@ -399,7 +399,7 @@ func main() {
 						})
 						go func() {
 
-							err := backend.InstalarWhisper()
+							err := transcribe.InstalarWhisper()
 							if err != nil {
 								fyne.Do(func() {
 								status.SetText("❌ Erro Whisper")
@@ -410,16 +410,16 @@ func main() {
 								return
 							}
 
-							audioPath := "output/" + backend.UltimoAudioGerado + ".mp3"
+							audioPath := "output/" + audio.UltimoAudioGerado + ".mp3"
 
 							// duração
-							duracao, _ := backend.DuracaoArquivo(audioPath)
+							duracao, _ := transcribe.DuracaoArquivo(audioPath)
 
 							// inicia progresso
 							go progressoTranscricao(status, duracao)
 
 							// transcreve
-							err = backend.TranscreverUltimo()
+							err = transcribe.TranscreverUltimo()
 							if err != nil {
 								fyne.Do(func() {
 								status.SetText("❌ Erro transcrição")
@@ -462,7 +462,7 @@ func main() {
 	// =========================
 	btnPararTranscricao = widget.NewButton("⛔ Parar Transcrição", func() {
 
-		err := backend.PararTranscricao()
+		err := transcribe.PararTranscricao()
 		if err != nil {
 			//status.SetText("❌ Erro ao parar transcrição")
 			status.SetText(err.Error())

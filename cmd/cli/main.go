@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"voz-em-texto/internal/backend" //  go.mod
+	"voz-em-texto/internal/audio"
+	"voz-em-texto/internal/transcribe"
 )
 
 func main() {
 	// Inicialização básica do sistema
-	backend.PrepararPastas()
+	audio.PrepararPastas()
 	err := backend.ChecarDependencias()
 	if err != nil {
 		fmt.Printf("⚠️ Erro de dependências: %v\n", err)
@@ -31,32 +33,32 @@ func main() {
 
 		switch opcao {
 		case "1":
-			monitor, err := backend.DetectarMonitor()
+			monitor, err := audio.DetectarMonitor()
 			if err != nil {
 				fmt.Printf("❌ Erro ao detectar monitor: %v\n", err)
 				continue
 			}
 
 			// Inicia a gravação interativa (ENTER para parar)
-			err = backend.GravarAteParar(monitor)
+			err = audio.GravarAteParar(monitor)
 			if err != nil {
 				fmt.Printf("❌ Erro na gravação: %v\n", err)
 			}
 
 		case "2":
 			// Garante que o Whisper está pronto antes de transcrever
-			if err := backend.InstalarWhisper(); err != nil {
+			if err := transcribe.InstalarWhisper(); err != nil {
 				fmt.Printf("❌ Erro com Whisper: %v\n", err)
 				continue
 			}
 
-			err := backend.TranscreverUltimo()
+			err := transcribe.TranscreverUltimo()
 			if err != nil {
 				fmt.Printf("❌ Erro na transcrição: %v\n", err)
 			}
 
 		case "3":
-			backend.TranscreverArquivo()
+			transcribe.TranscreverArquivo()
 
 		case "0":
 			fmt.Println("Encerrando... Até logo!")

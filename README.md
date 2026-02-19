@@ -1,22 +1,23 @@
 # 🎙️ Voz em Texto — Go (Linux)
 
-Projeto experimental em **Golang** para gravação de áudio do sistema e transcrição automática em texto usando **Whisper.cpp**.
+Projeto experimental em Golang para gravação de áudio do sistema e transcrição automática offline utilizando Whisper.cpp.
 
 Desenvolvido e testado em ambiente Linux (Ubuntu/Lubuntu).
 
-## Estrutura Modular
-O projeto foi reestruturado para seguir as melhores práticas de organização em Go:
-- **`cmd/gui/`**: Ponto de entrada da Interface Gráfica (Fyne).
-- **`cmd/cli/`**: Ponto de entrada da Interface de Terminal.
-- **`internal/backend/`**: Lógica centralizada para controle de áudio, FFmpeg e Whisper.
-- **`assets/`**: Repositório de recursos visuais e ícones.
-- **`bundled.go`**: Recursos embutidos (ícones) para garantir portabilidade total do binário.
+#  Arquitetura Modular
+
+O projeto foi refatorado para uma arquitetura em domínios independentes, seguindo boas práticas de organização em Go.
+
+- cmd/ → EntryPoints
+- internal/ → Domínios de negócio
 
 ##  Funcionalidades
+
 - **Gravação de áudio do sistema**: Captura o áudio interno via PulseAudio monitor utilizando FFmpeg.
 - **Transcrição Offline**: Integração com Whisper.cpp para processamento local.
 - **Portabilidade**: Uso de `bundled.go` para embutir ícones, evitando caminhos quebrados ao mover o executável.
 - **Organização de Arquivos**:
+
     - `audio/`: Arquivos temporários.
     - `input/`: Para áudios externos.
     - `output/`: Resultados finais em MP3 e TXT.
@@ -26,43 +27,89 @@ O projeto foi reestruturado para seguir as melhores práticas de organização e
 **1. Dependências do Sistema**
 
 O script `install.sh` automatiza a instalação de:
+
 - `cmake`, `ffmpeg`, `build-essential`, `pkg-config`.
 - Dependências X11 para a interface gráfica Fyne.
 
-**2. Configuração**
+## Estrutura
 
-<pre>
-git clone https://github.com/tiagollopes/voz-em-texto.git
-cd voz-em-texto
-chmod +x install.sh
-./install.sh
-</pre>
+- **cmd/gui/** → Interface gráfica (Fyne)
+- **cmd/cli/** → Interface terminal
+- **internal/audio/** → Captura e gravação de áudio
+- **internal/transcribe/** → Execução Whisper e IA
+- **internal/progress/** → Feedback visual de progresso
+- **internal/system/** → Infraestrutura e paths
+- **internal/backend/** → Orquestração leve e dependências
 
-### Como Executar
+# Funcionalidades
 
-**Interface Gráfica (GUI)**
+### 🎧 Gravação de áudio do sistema
 
-<pre>
-go run ./cmd/gui
-</pre>
+Captura áudio interno via PulseAudio monitor usando FFmpeg.
 
-**Terminal (CLI)**
+### Transcrição Offline
 
-<pre>
-go run ./cmd/cli
-</pre>
+Processamento local com Whisper.cpp (sem nuvem).
 
-**Compilar Executável Único**
+### Arquitetura desacoplada
 
-<pre>
-go build -o voz-em-texto ./cmd/gui
-</pre>
+IA, captura e feedback separados por domínio.
 
-### 📊 Fluxos de Trabalho
+### 🖥️ Interfaces disponíveis
 
-- Gravar + Transcrever: Grava o áudio, encerra e inicia automaticamente a transcrição Whisper.
+- GUI (Fyne)
+- CLI (Terminal)
 
-- Transcrever Externo: Seleciona um arquivo da pasta input/ e gera o .txt correspondente na output/.
+###  Organização de Arquivos
+
+- `audio/` → Temporários de gravação
+- `input/` → Áudios externos
+- `output/` → Resultados finais (.mp3 / .txt)
+
+# 🛠️ Instalação
+
+## Dependências
+
+Script automático:
+
+<pre>chmod +x install.sh
+./install.sh</pre>
+
+Instala:
+
+- cmake
+- ffmpeg
+- build-essential
+- pkg-config
+- dependências gráficas Fyne
+
+# ▶️ Como Executar
+
+## GUI
+
+<pre>go run ./cmd/gui</pre>
+
+## CLI
+
+<pre>go run ./cmd/cli</pre>
+
+# Fluxos de Trabalho
+
+### Gravar + Transcrever
+
+Grava o áudio e inicia a transcrição automaticamente.
+
+### Transcrever Externo
+
+Seleciona arquivo da pasta `input/` e gera `.txt` em `output/`.
+
+# Status do Projeto
+
+- Arquitetura modular concluída
+- IA isolada no domínio transcribe
+- Backend limpo
+- GUI e CLI desacoplados
+- Execução 100% offline
 
 # Licença
 
