@@ -1,115 +1,107 @@
-# 🎙️ Voz em Texto — Go (Linux)
+# 🎙️ Voz em Texto — Go (Multiplataforma)
 
-Projeto experimental em Golang para gravação de áudio do sistema e transcrição automática offline utilizando Whisper.cpp.
+Projeto experimental em Golang para gravação de áudio do sistema e transcrição automática offline utilizando **Whisper.cpp**. O sistema agora é totalmente multiplataforma, suportando **Linux** e **Windows** tanto em interface de linha de comando (CLI) quanto gráfica (GUI).
 
-Desenvolvido e testado em ambiente Linux (Ubuntu/Lubuntu).
+## Novidades: Suporte Windows
 
-#  Arquitetura Modular
+O projeto foi atualizado para rodar nativamente em Windows. Para garantir o funcionamento, é necessário utilizar a estrutura da pasta <pre>`bin/`</pre> para dependências externas.
 
-O projeto foi refatorado para uma arquitetura em domínios independentes, seguindo boas práticas de organização em Go.
+---
 
-- cmd/ → EntryPoints
-- internal/ → Domínios de negócio
+## 🖥️ Interfaces Disponíveis
 
-##  Funcionalidades
+* **GUI (Fyne):** Interface gráfica amigável para gravação e transcrição.
+* **CLI (Terminal):** Versão leve para uso via linha de comando.
 
-- **Gravação de áudio do sistema**: Captura o áudio interno via PulseAudio monitor utilizando FFmpeg.
-- **Transcrição Offline**: Integração com Whisper.cpp para processamento local.
-- **Portabilidade**: Uso de `bundled.go` para embutir ícones, evitando caminhos quebrados ao mover o executável.
-- **Organização de Arquivos**:
-
-    - `audio/`: Arquivos temporários.
-    - `input/`: Para áudios externos.
-    - `output/`: Resultados finais em MP3 e TXT.
+---
 
 ## 🛠️ Instalação e Dependências
 
-**1. Dependências do Sistema**
+### Linux
 
-O script `install.sh` automatiza a instalação de:
+O projeto foi desenvolvido e testado em ambiente Linux (Ubuntu/Lubuntu).
 
-- `cmake`, `ffmpeg`, `build-essential`, `pkg-config`.
-- Dependências X11 para a interface gráfica Fyne.
+1. **Dependências do Sistema:**
 
-## Estrutura
+   O script <pre>`install.sh`</pre> automatiza a instalação de: <pre>`cmake`</pre>, <pre>`ffmpeg`</pre>, <pre>`build-essential`</pre>, <pre>`pkg-config`</pre> e dependências X11 para a interface gráfica Fyne.
 
-- **cmd/gui/** → Interface gráfica (Fyne)
-- **cmd/cli/** → Interface terminal
-- **internal/audio/** → Captura e gravação de áudio
-- **internal/transcribe/** → Execução Whisper e IA
-- **internal/progress/** → Feedback visual de progresso
-- **internal/system/** → Infraestrutura e paths
-- **internal/backend/** → Orquestração leve e dependências
+   <pre>chmod +x install.sh
+   ./install.sh</pre>
 
-# Funcionalidades
+### 🪟 Windows
 
-### 🎧 Gravação de áudio do sistema
+Para rodar no Windows, o sistema depende de binários e bibliotecas específicas localizadas na pasta bin/.
 
-Captura áudio interno via PulseAudio monitor usando FFmpeg.
+Dependências Obrigatórias:
 
-### Transcrição Offline
+Devido ao tamanho, alguns arquivos devem ser baixados na aba Releases deste repositório:
 
-Processamento local com Whisper.cpp (sem nuvem).
+Coloque <pre>ffmpeg.exe</pre> e <pre>ffprobe.exe</pre> em: bin/windows/
 
-### Arquitetura desacoplada
+Coloque o modelo <pre>ggml-tiny.bin</pre> em: <pre>bin/models/</pre>
 
-IA, captura e feedback separados por domínio.
+As DLLs essenciais (SDL2.dll, whisper.dll, etc.) já estão incluídas no repositório na pasta <pre>bin/windows/</pre>.
 
-### 🖥️ Interfaces disponíveis
+## 🏗️ Compilação (Build)
 
-- GUI (Fyne)
-- CLI (Terminal)
+Se você deseja gerar os executáveis manualmente, utilize os comandos abaixo:
 
-###  Organização de Arquivos
+###Para Windows (Cross-compilation no Linux)
 
-- `audio/` → Temporários de gravação
-- `input/` → Áudios externos
-- `output/` → Resultados finais (.mp3 / .txt)
+GUI (Sem janela de terminal):
 
-# 🛠️ Instalação
+<pre>
+CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -ldflags="-H=windowsgui -s -w" -o voz-gui.exe ./cmd/gui
+</pre>
 
-## Dependências
+CLI:
 
-Script automático:
+<pre>
+GOOS=windows GOARCH=amd64 go build -o voz-cli.exe ./cmd/cli
+</pre>
 
-<pre>chmod +x install.sh
-./install.sh</pre>
+###Para Linux
 
-Instala:
+GUI:
 
-- cmake
-- ffmpeg
-- build-essential
-- pkg-config
-- dependências gráficas Fyne
+<pre>
+go build -o teste-gui-linux ./cmd/gui
+</pre>
 
-# ▶️ Como Executar
+CLI:
 
-## GUI
+<pre>
+go build -o voz-cli-linux ./cmd/cli
+</pre>
 
-<pre>go run ./cmd/gui</pre>
+## Organização de Arquivos e Domínios
 
-## CLI
+O projeto segue uma arquitetura modular baseada em domínios independentes:
 
-<pre>go run ./cmd/cli</pre>
+- cmd/ → EntryPoints (GUI e CLI).
 
-# Fluxos de Trabalho
+- internal/audio/ → Captura e gravação de áudio (PulseAudio/Linux e WASAPI/Windows).
 
-### Gravar + Transcrever
+- internal/transcribe/ → Execução do Whisper e motor de IA.
 
-Grava o áudio e inicia a transcrição automaticamente.
+- internal/system/ → Gestão de caminhos (Paths) e infraestrutura.
 
-### Transcrever Externo
+- audio/ → Arquivos temporários de gravação.
 
-Seleciona arquivo da pasta `input/` e gera `.txt` em `output/`.
+- input/ → Para áudios externos que deseja transcrever.
 
-# Status do Projeto
+- output/ → Resultados finais em .mp3 e .txt.
 
-- Arquitetura modular concluída
-- IA isolada no domínio transcribe
-- Backend limpo
-- GUI e CLI desacoplados
-- Execução 100% offline
+## ✨ Funcionalidades
+
+
+* **🎧 Gravação do Sistema:** Captura áudio interno (o que você ouve) sem necessidade de microfone externo.
+
+
+* **Transcrição 100% Offline:** Processamento local com Whisper.cpp.
+
+
+* **📦 Portabilidade:** Uso de bundled.go para embutir ativos (ícones), evitando caminhos quebrados.
 
 # Licença
 
