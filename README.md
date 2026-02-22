@@ -4,16 +4,13 @@ Projeto experimental em Golang para gravação de áudio do sistema e transcriç
 
 ## Novidades: Suporte Windows
 
-O projeto foi atualizado para rodar nativamente em Windows. Para garantir o funcionamento, é necessário utilizar a estrutura da pasta <pre>`bin/`</pre> para dependências externas.
+O projeto foi atualizado para rodar nativamente em Windows. Para garantir o funcionamento, é necessário utilizar a estrutura da pasta `bin/` para dependências externas.
 
----
 
 ## 🖥️ Interfaces Disponíveis
 
 * **GUI (Fyne):** Interface gráfica amigável para gravação e transcrição.
 * **CLI (Terminal):** Versão leve para uso via linha de comando.
-
----
 
 ## 🛠️ Instalação e Dependências
 
@@ -23,7 +20,7 @@ O projeto foi desenvolvido e testado em ambiente Linux (Ubuntu/Lubuntu).
 
 1. **Dependências do Sistema:**
 
-   O script <pre>`install.sh`</pre> automatiza a instalação de: <pre>`cmake`</pre>, <pre>`ffmpeg`</pre>, <pre>`build-essential`</pre>, <pre>`pkg-config`</pre> e dependências X11 para a interface gráfica Fyne.
+   O script `install.sh` automatiza a instalação de: `cmake`, `ffmpeg`, `build-essential`, `pkg-config` e dependências X11 para a interface gráfica Fyne.
 
    <pre>chmod +x install.sh
    ./install.sh</pre>
@@ -36,17 +33,17 @@ Dependências Obrigatórias:
 
 Devido ao tamanho, alguns arquivos devem ser baixados na aba Releases deste repositório:
 
-Coloque <pre>ffmpeg.exe</pre> e <pre>ffprobe.exe</pre> em: bin/windows/
+Coloque `ffmpeg.exe` e `ffprobe.exe` em: `bin/windows/`
 
-Coloque o modelo <pre>ggml-tiny.bin</pre> em: <pre>bin/models/</pre>
+Coloque o modelo `ggml-tiny.bin` em: `bin/models/`
 
-As DLLs essenciais (SDL2.dll, whisper.dll, etc.) já estão incluídas no repositório na pasta <pre>bin/windows/</pre>.
+As DLLs essenciais (SDL2.dll, whisper.dll, etc.) já estão incluídas no repositório na pasta `bin/windows/`.
 
 ## 🏗️ Compilação (Build)
 
 Se você deseja gerar os executáveis manualmente, utilize os comandos abaixo:
 
-###Para Windows (Cross-compilation no Linux)
+* **Para Windows (Cross-compilation no Linux)**
 
 GUI (Sem janela de terminal):
 
@@ -60,7 +57,7 @@ CLI:
 GOOS=windows GOARCH=amd64 go build -o voz-cli.exe ./cmd/cli
 </pre>
 
-###Para Linux
+* **Para Linux**
 
 GUI:
 
