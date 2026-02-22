@@ -1,8 +1,11 @@
+//go:build !windows
+
 package transcribe
 
 import (
 	"fmt"
 	"os"
+	"io"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -40,8 +43,10 @@ func InstalarWhisper() error {
 			"https://github.com/ggerganov/whisper.cpp",
 			"whisper",
 		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		/*cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr*/
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
 
 		if err := cmd.Run(); err != nil {
 			return err
@@ -52,8 +57,10 @@ func InstalarWhisper() error {
 
 	cmd := exec.Command("make")
 	cmd.Dir = "./whisper"
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	/*cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr*/
+	cmd.Stdout = io.Discard
+        cmd.Stderr = io.Discard
 
 	if err := cmd.Run(); err != nil {
 		return err
@@ -68,8 +75,8 @@ func InstalarWhisper() error {
 		"tiny",
 	)
 	cmd.Dir = "./whisper"
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 
 	return cmd.Run()
 }

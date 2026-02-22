@@ -2,7 +2,10 @@ module voz-em-texto
 
 go 1.22.2
 
-require fyne.io/fyne/v2 v2.7.2
+require (
+	fyne.io/fyne/v2 v2.7.2
+	github.com/gen2brain/malgo v0.11.24
+)
 
 require (
 	fyne.io/systray v1.12.0 // indirect

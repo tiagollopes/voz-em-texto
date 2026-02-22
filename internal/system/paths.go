@@ -39,4 +39,17 @@ func WhisperBinary() string {
 	}
 	return filepath.Join(WhisperDir(), "build", "bin", "whisper-cli")
 }
+// BinDir retorna a pasta de binários auxiliares
+func BinDir() string {
+	return filepath.Join(BasePath(), "bin")
+}
 
+// FFmpegBinary retorna o caminho para o executável do FFmpeg
+func FFmpegBinary() string {
+	if IsWindows() {
+		// No Windows, ele buscará em bin/ffmpeg.exe ao lado do seu .exe
+		return filepath.Join(BinDir(), "ffmpeg.exe")
+	}
+	// No Linux, assume que está no PATH ou você pode apontar para um binário local também
+	return "ffmpeg"
+}

@@ -1,47 +1,29 @@
 #!/bin/bash
 
 echo "======================================"
-echo " Instalando dependências do projeto "
-echo " Voz em Texto (Go + Whisper + GUI) "
+echo " Instalador - Voz em Texto "
 echo "======================================"
-
 echo ""
-echo "⚙ Atualizando repositórios..."
-sudo apt update
 
-echo ""
+echo "⚙ Preparando ambiente..."
+
+sudo apt update > /dev/null 2>&1
+
 echo "📦 Instalando dependências principais..."
-sudo apt install -y cmake build-essential ffmpeg git pkg-config
+sudo apt install -y cmake build-essential ffmpeg git pkg-config pulseaudio-utils > /dev/null 2>&1
 
-echo ""
-echo "🖥️ Instalando dependências gráficas (GUI Fyne)..."
-sudo apt install -y libgl1-mesa-dev xorg-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
+echo "🖥️ Instalando dependências gráficas..."
+sudo apt install -y libgl1-mesa-dev xorg-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev > /dev/null 2>&1
 
-echo ""
-echo "⚙ Verificando Go instalado..."
-if ! command -v go >/dev/null 2>&1; then
-    echo "❌ Go não encontrado."
-    echo "Instale em: https://go.dev/dl/"
-    exit 1
-fi
+echo "⚙ Ajustando permissões dos executáveis..."
 
-echo "✅ Go encontrado."
-
-echo ""
-echo "📦 Baixando dependências do projeto..."
-go mod tidy
+find . -maxdepth 1 -type f -name "voz*" -exec chmod +x {} ; 2>/dev/null
 
 echo ""
 echo "======================================"
-echo "✅ Instalação concluída!"
+echo "✅ Instalação concluída com sucesso!"
 echo "======================================"
 echo ""
-echo "Para rodar CLI:"
-echo "   go run main.go"
-echo ""
-echo "Para rodar GUI:"
-echo "   go run gui.go"
-echo ""
-echo "Ou compilar:"
-echo "   go build"
+echo "Execute o aplicativo normalmente:"
+echo "   ./vozgui"
 echo ""

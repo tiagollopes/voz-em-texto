@@ -1,7 +1,5 @@
 # =========================
-
 # Whisper.cpp
-
 # =========================
 
 whisper/
@@ -9,33 +7,24 @@ models/
 build/
 
 # =========================
-
 # Áudios e gravações
-
 # =========================
 
-audio/
+/audio/
 output/
 input/*.mp3
 input/*.wav
 input/*.m4a
 
 # =========================
-
 # Transcrições
-
 # =========================
 
 *.txt
 
-# (Se quiser versionar docs, remova essa linha)
-
 # =========================
-
 # Binários Go
-
 # =========================
-
 *.exe
 *.out
 *.bin
@@ -44,9 +33,21 @@ vozcli
 voz
 
 # =========================
+# Dependências Binárias (Exceções)
+# =========================
+# Primeiro, permitimos as DLLs e binários pequenos da pasta bin
+!bin/**/*.exe
+!bin/**/*.dll
+!bin/**/*.bin
 
+# Agora, bloqueamos ESPECIFICAMENTE os arquivos que excedem o limite do GitHub
+# Isso evita que o erro de 100MB aconteça de novo
+bin/windows/ffmpeg.exe
+bin/windows/ffprobe.exe
+bin/models/*.bin
+
+# =========================
 # Go build / cache
-
 # =========================
 
 dist/
@@ -54,18 +55,14 @@ build/
 tmp/
 
 # =========================
-
 # Sistema
-
 # =========================
 
 .DS_Store
 Thumbs.db
 
 # =========================
-
 # IDE
-
 # =========================
 
 .vscode/

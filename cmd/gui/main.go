@@ -7,7 +7,7 @@ import (
 	"time"
 	"os"
 	"os/exec"
-
+	"path/filepath"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -16,7 +16,6 @@ import (
 	"image/color"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
-
 )
 
 // =========================
@@ -187,71 +186,51 @@ func atualizarREC(dot *canvas.Text, label *widget.Label, bar *widget.ProgressBar
 }
 
 func progressoTranscricao(status *widget.Label, duracao float64) {
-
 	inicio := time.Now()
+	// Mantendo sua lógica de 3x a duração para ser bem brando
 	tempoEstimado := duracao * 3.0
+	// Se for um áudio minúsculo, garante ao menos 3s de barra
+	if tempoEstimado < 3 { tempoEstimado = 3 }
 
 	mostrouFinalizando := false
 
 	for {
-
-		// Sai se terminou ou cancelou
+		// 1. Checa primeiro se o motor parou antes de atualizar a tela
 		if !transcrevendo {
-
 			if cancelado {
-
-				fyne.Do(func() {
-					status.SetText("⛔ Transcrição cancelada")
-				})
-
+				fyne.Do(func() { status.SetText("⛔ Transcrição cancelada") })
 			} else {
-
-				fyne.Do(func() {
-					status.SetText("✅ Transcrição concluída")
-				})
+				fyne.Do(func() { status.SetText("✅ Transcrição concluída") })
 			}
-
 			return
 		}
 
 		decorrido := time.Since(inicio).Seconds()
 		percent := (decorrido / tempoEstimado) * 100
 
-		// LIMITADOR — mantém 95%
 		if percent > 95 {
 			percent = 95
 		}
 
-		// Quando chega em 95 → entra em modo finalização
 		if percent >= 95 {
-
 			if !mostrouFinalizando {
-
-				fyne.Do(func() {
-					status.SetText("⚙️ Finalizando transcrição...")
-				})
-
+				fyne.Do(func() { status.SetText("⚙️ Finalizando transcrição...") })
 				mostrouFinalizando = true
 			}
-
-			// 🔒 trava aqui até terminar ou cancelar
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
-		texto := fmt.Sprintf(
-			"⚙️ Transcrevendo... %.0f%%",
-			percent,
-		)
-
+		// 2. Aqui está o pulo do gato: usamos 500ms para garantir que o
+		// usuário veja pelo menos um número antes de terminar.
+		texto := fmt.Sprintf("⚙️ Transcrevendo... %.0f%%", percent)
 		fyne.Do(func() {
 			status.SetText(texto)
 		})
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
-
 
 func listarAudiosInput() []string {
 
@@ -384,7 +363,7 @@ func main() {
 
 				status.SetText("✅ Áudio salvo")
 			})
-			dialog.NewConfirm(
+dialog.NewConfirm(
 				"Transcrever",
 				"Deseja transcrever agora?",
 				func(resposta bool) {
@@ -394,15 +373,22 @@ func main() {
 						transcrevendo = true
 						cancelado = false
 						atualizarBotoes()
+
+						// 1. Mensagem inicial no rodapé
 						fyne.Do(func() {
-						status.SetText("⚙️ Transcrevendo áudio...")
+							status.SetText("⚙️ Transcrevendo áudio...")
 						})
+
 						go func() {
+							// --- ACRESCIMO DE SEGURANÇA PARA WINDOWS ---
+							time.Sleep(500 * time.Millisecond)
 
 							err := transcribe.InstalarWhisper()
 							if err != nil {
+								// POPUP DE ERRO: Só sai da tela quando você der OK
 								fyne.Do(func() {
-								status.SetText("❌ Erro Whisper")
+									dialog.ShowError(fmt.Errorf("Whisper não localizado em bin/windows"), w)
+									status.SetText("❌ Erro Whisper")
 								})
 								transcrevendo = false
 								cancelado = true
@@ -410,32 +396,47 @@ func main() {
 								return
 							}
 
-							audioPath := "output/" + audio.UltimoAudioGerado + ".mp3"
+							audioPath := audio.UltimoAudioGerado
+							if audioPath == "" {
+								audioPath = filepath.Join("output", "audio_recente.wav")
+							}
+
+							nomeBase := filepath.Base(audioPath)
+
+							fyne.Do(func() {
+							status.SetText("⚙️ Transcrevendo: " + nomeBase)
+							})
+
+							// Espera um pouco para o usuário ler o popup antes de iniciar a barra
+							//time.Sleep(1000 * time.Millisecond)
 
 							// duração
 							duracao, _ := transcribe.DuracaoArquivo(audioPath)
 
-							// inicia progresso
+							// inicia progresso (Este loop vai atualizar o status com %)
 							go progressoTranscricao(status, duracao)
 
 							// transcreve
 							err = transcribe.TranscreverUltimo()
 							if err != nil {
-								fyne.Do(func() {
-								status.SetText("❌ Erro transcrição")
-								})
 								transcrevendo = false
+								fyne.Do(func() {
+									// POPUP DE ERRO REAL: Vai mostrar por que a transcrição falhou
+									dialog.ShowError(fmt.Errorf("Erro na transcrição:\n%v", err), w)
+									status.SetText(fmt.Sprintf("❌ Erro: %v", err))
+								})
 								cancelado = true
 								atualizarBotoes()
 								return
 							}
 
 							// finaliza
+							transcrevendo = false
 							fyne.Do(func() {
-							status.SetText("✅ Transcrição concluída")
+								status.SetText("✅ Transcrição concluída: " + nomeBase)
+								dialog.ShowInformation("Sucesso", "A transcrição foi finalizada com sucesso!", w)
 							})
 
-							transcrevendo = false
 							atualizarBotoes()
 						}()
 					}
